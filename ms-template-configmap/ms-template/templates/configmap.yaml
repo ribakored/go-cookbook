@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ms-template.name" . }}
+  labels:
+    {{- include "ms-template.labels" . | nindent 4 }}
+data:
+  app.properties: |
+    scale=1
+    chances=2
