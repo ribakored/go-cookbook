@@ -47,33 +47,6 @@ func initialize() {
 
 }
 
-func startConfigMapWatch(configmaps *v13.ConfigMapInterface) {
-
-	cfgs := *configmaps
-	watcher, err := cfgs.Watch(context.TODO(), v1.ListOptions{})
-	if err != nil {
-		fmt.Printf("Unable to Create a watcher on configmap %v, with errror:%v", configMapName, err)
-		panic(err.Error())
-	}
-
-	for event := range watcher.ResultChan() {
-		svc := event.Object.(*v12.ConfigMap)
-		switch event.Type {
-		case watch.Added:
-			fmt.Printf("Configmap %s/%s Added", svc.ObjectMeta.Namespace, svc.ObjectMeta.Name)
-		case watch.Deleted:
-			fmt.Printf("Configmap %s/%s Deleted", svc.ObjectMeta.Namespace, svc.ObjectMeta.Name)
-		case watch.Error:
-			fmt.Printf("Configmap %s/%s Error", svc.ObjectMeta.Namespace, svc.ObjectMeta.Name)
-		case watch.Modified:
-			if strings.Contains(svc.ObjectMeta.Name, configMapName) {
-				fmt.Printf("Configmap %s/%s modified", svc.ObjectMeta.Namespace, svc.ObjectMeta.Name)
-				initializeConfigmap(configmaps)
-			}
-		}
-	}
-}
-
 func initializeConfigmap(configmaps *v13.ConfigMapInterface) {
 	var err error
 	cfgs := *configmaps
@@ -82,7 +55,27 @@ func initializeConfigmap(configmaps *v13.ConfigMapInterface) {
 		fmt.Printf("Unable to retreive configmap %v, with errror:%v", configMapName, err)
 		panic(err.Error())
 	}
-	fmt.Printf("Created/Refreshed Configmap Object Value from k8s configmap %v", configMapName)
+	fmt.Printf("\nCreated/Refreshed Configmap Object Value from k8s configmap %v", configMapName)
+}
+
+func startConfigMapWatch(configmaps *v13.ConfigMapInterface) {
+	cfgs := *configmaps
+	watcher, err := cfgs.Watch(context.TODO(), v1.ListOptions{})
+	if err != nil {
+		fmt.Printf("Unable to Create a watcher on configmap %v, with errror:%v", configMapName, err)
+		panic(err.Error())
+	}
+
+	for event := range watcher.ResultChan() {
+		cfg := event.Object.(*v12.ConfigMap)
+		switch event.Type {
+		case watch.Modified:
+			if strings.Contains(cfg.ObjectMeta.Name, configMapName) {
+				fmt.Printf("\nConfigmap %s/%s modified", cfg.ObjectMeta.Namespace, cfg.ObjectMeta.Name)
+				initializeConfigmap(configmaps)
+			}
+		}
+	}
 }
 
 func printConfigmap(c *gin.Context) {
